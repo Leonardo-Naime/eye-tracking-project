@@ -33,14 +33,12 @@ class EyeTrackingConfig:
     # Ações do YouTube
     YOUTUBE_ACTIONS = {
         'play_pause': 'space',
-        'next_video': 'shift+n',
-        'previous_video': 'shift+p',
-        'forward_10s': 'l',
-        'backward_10s': 'j',
+        # 'next_video': 'shift+n',
+        # 'previous_video': 'shift+p',
         'forward_5s': 'right',
         'backward_5s': 'left',
-        'volume_up': 'up',
-        'volume_down': 'down',
-        'mute': 'm',
+        # 'volume_up': 'up',
+        # 'volume_down': 'down',
+        # 'mute': 'm',
         'fullscreen': 'f'
     }

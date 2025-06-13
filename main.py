@@ -13,6 +13,8 @@ from action_controller import ActionController
 class EyeTrackingApp:
     """Aplicação principal que integra todos os componentes"""
     
+    isRunning = True
+    
     def __init__(self):
         self.config = EyeTrackingConfig()
         self.eye_detector = EyeDetector(self.config)
@@ -57,10 +59,12 @@ class EyeTrackingApp:
         # Detecta pontos faciais
         landmarks = self.eye_detector.detect_faces_and_landmarks(frame)
         
+        
         if landmarks is None:
             # Verifica ausência prolongada
-            if self.eye_detector.is_absence_detected():
+            if self.eye_detector.is_absence_detected() and EyeTrackingApp.isRunning:
                 self.action_controller.handle_absence_action()
+                EyeTrackingApp.isRunning = False
             
             # Mostra mensagem na tela
             cv2.putText(frame, "Nenhum rosto detectado", (50, 50), 
