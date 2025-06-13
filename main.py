@@ -19,7 +19,7 @@ class EyeTrackingApp:
         self.action_controller = ActionController(self.config)
         self.cap: Optional[cv2.VideoCapture] = None
         self.running = False
-        self.isRunning = True
+        self.isVideoRunning = True
         self.wasPausedManually = False
     
     def initialize_camera(self) -> bool:
@@ -62,9 +62,9 @@ class EyeTrackingApp:
         
         if landmarks is None:
             # Verifica ausência prolongada
-            if self.eye_detector.is_absence_detected() and self.isRunning:
+            if self.eye_detector.is_absence_detected() and self.isVideoRunning:
                 self.action_controller.handle_absence_action()
-                self.isRunning = False
+                self.isVideoRunning = False
                 self.wasPausedManually = False
                 print("Parei")
             
@@ -73,9 +73,9 @@ class EyeTrackingApp:
                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         else:
             # Extrai pontos do olho esquerdo
-            if self.isRunning == False and self.wasPausedManually == False:
+            if self.isVideoRunning == False and self.wasPausedManually == False:
                 self.action_controller.handle_absence_action()
-                self.isRunning = True
+                self.isVideoRunning = True
                 print("Voltei")
             
             left_eye_points = self.eye_detector.extract_eye_points(
