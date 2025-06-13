@@ -14,6 +14,7 @@ class EyeTrackingApp:
     """Aplicação principal que integra todos os componentes"""
     
     isRunning = True
+    wasPausedManually = False
     
     def __init__(self):
         self.config = EyeTrackingConfig()
@@ -65,12 +66,19 @@ class EyeTrackingApp:
             if self.eye_detector.is_absence_detected() and EyeTrackingApp.isRunning:
                 self.action_controller.handle_absence_action()
                 EyeTrackingApp.isRunning = False
+                EyeTrackingApp.wasPausedManually = False
+                print("Parei")
             
             # Mostra mensagem na tela
             cv2.putText(frame, "Nenhum rosto detectado", (50, 50), 
                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         else:
             # Extrai pontos do olho esquerdo
+            if EyeTrackingApp.isRunning == False and EyeTrackingApp.wasPausedManually == False:
+                self.action_controller.handle_absence_action()
+                EyeTrackingApp.isRunning = True
+                print("Voltei")
+            
             left_eye_points = self.eye_detector.extract_eye_points(
                 landmarks, self.config.LEFT_EYE_POINTS
             )
