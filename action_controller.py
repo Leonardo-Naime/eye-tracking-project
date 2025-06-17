@@ -52,16 +52,25 @@ class ActionController:
             print(f"Erro ao executar ação {action_name}: {e}")
             return False
     
-    def handle_blink_action(self) -> None:
+    def handle_blink_action(self, eye_name: str) -> None:
         # Ação executada quando uma piscada é detectada
-        
-        self.execute_youtube_action('forward_5s')
+        if(eye_name == 'left'):
+            # Ação para piscada no olho esquerdo
+            print("Piscada no olho esquerdo detectada - Executando ação")
+            self.execute_youtube_action('backward_5s')
+        elif(eye_name == 'right'):
+            # Ação para piscada no olho direito
+            print("Piscada no olho direito detectada - Executando ação")
+            self.execute_youtube_action('forward_5s')
     
-    def handle_absence_action(self) -> None:
+    def handle_absence_action(self, action_name: str) -> None:
         # Ação executada quando há ausência prolongada de rosto
         
         self.execute_youtube_action('play_pause')
-        print("Ausência detectada - Pausando vídeo")
+        if(action_name == 'play'):
+            print("Rosto detectado - Retomando vídeo")
+        else:
+            print("Ausência detectada - Pausando vídeo")
     
     def handle_custom_gesture(self, gesture_type: str, **kwargs) -> None:
         # Manipula gestos customizados futuros

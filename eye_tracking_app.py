@@ -49,7 +49,7 @@ class EyeTrackingApp:
         if landmarks is None:
             # Verifica ausência prolongada
             if self.eye_detector.is_absence_detected() and self.isVideoRunning:
-                self.action_controller.handle_absence_action()
+                self.action_controller.handle_absence_action('pause')
                 self.isVideoRunning = False
                 self.wasPausedManually = False
                 print("Parei")
@@ -60,7 +60,7 @@ class EyeTrackingApp:
         else:
             # Despausa vídeo se foi pausado por ausência
             if self.isVideoRunning == False and self.wasPausedManually == False:
-                self.action_controller.handle_absence_action()
+                self.action_controller.handle_absence_action('play')
                 self.isVideoRunning = True
                 print("Voltei")
             
@@ -70,24 +70,28 @@ class EyeTrackingApp:
             )
             
             # Extrai pontos do olho direito
-            # right_eye_points = self.eye_detector.extract_eye_points(
-            #     landmarks, self.config.RIGHT_EYE_POINTS
-            # ) 
+            right_eye_points = self.eye_detector.extract_eye_points(
+                landmarks, self.config.RIGHT_EYE_POINTS
+            ) 
             
             # Calcula EAR
             ear_left = self.eye_detector.calculate_ear(left_eye_points)
-            
-            # Detecta piscada
+            ear_right = self.eye_detector.calculate_ear(right_eye_points)
+
+            # Detecta piscada no olho direito
+            if self.eye_detector.is_blink_detected(ear_right):
+                self.action_controller.handle_blink_action('right')
+            # Detecta piscada no olho esquerdo
             if self.eye_detector.is_blink_detected(ear_left):
-                self.action_controller.handle_blink_action()
+                self.action_controller.handle_blink_action('left')
             
             # Desenha pontos do olho se habilitado
             if self.config.SHOW_EYE_POINTS:
                 self.eye_detector.draw_eye_points(frame, left_eye_points)
-            
+                self.eye_detector.draw_eye_points(frame, right_eye_points)
             # Mostra informações de debug se habilitado
             if self.config.SHOW_DEBUG_INFO:
-                self.eye_detector.add_debug_info(frame, ear_left)
+                self.eye_detector.add_debug_info(frame, ear_left, ear_right)
         
         return True
     

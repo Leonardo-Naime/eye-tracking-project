@@ -107,11 +107,6 @@ class EyeDetector:
     
     def add_debug_info(self, frame: np.ndarray, ear_left: float, ear_right: float = None) -> None:
         # Adiciona informações de debug no frame
-        
-        # Args:
-        #     frame: Frame onde adicionar as informações
-        #     ear_left: EAR do olho esquerdo
-        #     ear_right: EAR do olho direito (opcional)
             
         y_offset = 30
         cv2.putText(frame, f"EAR Left: {ear_left:.3f}", (10, y_offset), 

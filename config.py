@@ -15,8 +15,8 @@ class EyeTrackingConfig:
     ABSENCE_THRESHOLD = 30  # Frames sem rosto para pausar
     
     # Índices dos pontos faciais (dlib 68-point model)
-    LEFT_EYE_POINTS = list(range(36, 42))
-    RIGHT_EYE_POINTS = list(range(42, 48))
+    RIGHT_EYE_POINTS = list(range(36, 42))
+    LEFT_EYE_POINTS = list(range(42, 48))
     
     # Configurações de display
     WINDOW_NAME = "Eye Tracking Control"
