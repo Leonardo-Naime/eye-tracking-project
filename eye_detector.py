@@ -86,6 +86,21 @@ class EyeDetector:
             
         return False
     
+    def is_blink_twice_detected(self, ear_left: float, ear_right: float) -> bool:
+        # Detecta se houve uma piscada baseada no EAR
+        
+        # Ambos os olhos fechados
+        if ear_left < self.config.EAR_THRESHOLD and ear_right < self.config.EAR_THRESHOLD:
+            self.eye_closed_frames += 1
+            
+            if self.eye_closed_frames >= self.config.EAR_CONSECUTIVE_FRAMES:
+                self.eye_closed_frames = 0  # Reset após detectar
+                return True
+        else:
+            self.eye_closed_frames = 0  # Reset se olho abrir
+            
+        return False
+    
     def is_absence_detected(self) -> bool:
         # Verifica se houve ausência prolongada de rosto
         

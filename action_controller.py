@@ -45,7 +45,6 @@ class ActionController:
             else:
                 pyautogui.press(key_combination)
             
-            print(f"Ação executada: {action_name} ({key_combination})")
             return True
             
         except Exception as e:
@@ -56,12 +55,17 @@ class ActionController:
         # Ação executada quando uma piscada é detectada
         if(eye_name == 'left'):
             # Ação para piscada no olho esquerdo
-            print("Piscada no olho esquerdo detectada - Executando ação")
+            print("Retrocedeu 5 segundos")
             self.execute_youtube_action('backward_5s')
         elif(eye_name == 'right'):
             # Ação para piscada no olho direito
-            print("Piscada no olho direito detectada - Executando ação")
+            print("Avançou 5 segundos")
             self.execute_youtube_action('forward_5s')
+    
+    def handle_blink_twice_action(self) -> None:
+        # Ação executada quando uma piscada dupla é detectada
+        self.execute_youtube_action('fullscreen')
+        print("Abriu tela cheia")
     
     def handle_absence_action(self, action_name: str) -> None:
         # Ação executada quando há ausência prolongada de rosto

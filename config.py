@@ -8,8 +8,8 @@ class EyeTrackingConfig:
     CAMERA_INDEX = 0
     
     # Parâmetros de detecção ocular
-    EAR_THRESHOLD = 0.15  # Limiar para detecção de olho fechado (0.15-0.25)
-    EAR_CONSECUTIVE_FRAMES = 3  # Frames consecutivos para confirmar piscada
+    EAR_THRESHOLD = 0.14  # Limiar para detecção de olho fechado (0.15-0.25)
+    EAR_CONSECUTIVE_FRAMES = 7  # Frames consecutivos para confirmar piscada
     
     # Parâmetros de ausência de rosto
     ABSENCE_THRESHOLD = 30  # Frames sem rosto para pausar

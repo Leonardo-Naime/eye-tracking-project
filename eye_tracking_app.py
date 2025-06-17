@@ -52,7 +52,6 @@ class EyeTrackingApp:
                 self.action_controller.handle_absence_action('pause')
                 self.isVideoRunning = False
                 self.wasPausedManually = False
-                print("Parei")
             
             # Mostra mensagem na tela
             cv2.putText(frame, "Nenhum rosto detectado", (50, 50), 
@@ -62,7 +61,6 @@ class EyeTrackingApp:
             if self.isVideoRunning == False and self.wasPausedManually == False:
                 self.action_controller.handle_absence_action('play')
                 self.isVideoRunning = True
-                print("Voltei")
             
             # Extrai pontos do olho esquerdo
             left_eye_points = self.eye_detector.extract_eye_points(
@@ -84,6 +82,10 @@ class EyeTrackingApp:
             # Detecta piscada no olho esquerdo
             if self.eye_detector.is_blink_detected(ear_left):
                 self.action_controller.handle_blink_action('left')
+            
+            if self.eye_detector.is_blink_twice_detected(ear_left, ear_right):
+                # Ação para piscada dupla
+                self.action_controller.handle_blink_twice_action()
             
             # Desenha pontos do olho se habilitado
             if self.config.SHOW_EYE_POINTS:
@@ -132,8 +134,6 @@ class EyeTrackingApp:
                 # Teclas adicionais para teste manual
                 elif key == ord('p'):  # Play/Pause
                     self.action_controller.execute_youtube_action('play_pause')
-                elif key == ord('f'):  # Fullscreen
-                    self.action_controller.execute_youtube_action('fullscreen')
                 elif key == ord('m'):  # Mute
                     self.action_controller.execute_youtube_action('mute')
         
