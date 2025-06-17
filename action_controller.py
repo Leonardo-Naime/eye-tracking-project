@@ -1,7 +1,3 @@
-"""
-Módulo para controle de ações baseadas em eye tracking
-"""
-
 import pyautogui
 import time
 from typing import Dict, Any
@@ -9,7 +5,7 @@ from config import EyeTrackingConfig
 
 
 class ActionController:
-    """Classe responsável por executar ações baseadas nos movimentos oculares"""
+    # Classe responsável por executar ações baseadas nos movimentos oculares
     
     def __init__(self, config: EyeTrackingConfig):
         self.config = config
@@ -21,12 +17,8 @@ class ActionController:
         pyautogui.FAILSAFE = True  # Move mouse para canto superior esquerdo para parar
     
     def can_execute_action(self) -> bool:
-        """
-        Verifica se pode executar uma ação (evita spam)
+        # Verifica se pode executar uma ação (evita spam)
         
-        Returns:
-            bool: True se pode executar ação
-        """
         current_time = time.time()
         if current_time - self.last_action_time >= self.min_action_interval:
             self.last_action_time = current_time
@@ -34,15 +26,8 @@ class ActionController:
         return False
     
     def execute_youtube_action(self, action_name: str) -> bool:
-        """
-        Executa uma ação específica do YouTube
+        # Executa uma ação específica do YouTube
         
-        Args:
-            action_name: Nome da ação (deve existir em YOUTUBE_ACTIONS)
-            
-        Returns:
-            bool: True se ação foi executada com sucesso
-        """
         if not self.can_execute_action():
             return False
             
@@ -68,28 +53,22 @@ class ActionController:
             return False
     
     def handle_blink_action(self) -> None:
-        """
-        Ação executada quando uma piscada é detectada
-        Por enquanto avança 5 segundos, mas pode ser customizada
-        """
+        # Ação executada quando uma piscada é detectada
+        
         self.execute_youtube_action('forward_5s')
     
     def handle_absence_action(self) -> None:
-        """
-        Ação executada quando há ausência prolongada de rosto
-        Pausa o vídeo automaticamente
-        """
+        # Ação executada quando há ausência prolongada de rosto
+        
         self.execute_youtube_action('play_pause')
         print("Ausência detectada - Pausando vídeo")
     
     def handle_custom_gesture(self, gesture_type: str, **kwargs) -> None:
-        """
-        Manipula gestos customizados futuros
-        
-        Args:
-            gesture_type: Tipo do gesto
-            **kwargs: Parâmetros adicionais do gesto
-        """
+        # Manipula gestos customizados futuros
+        # Args:
+        #     gesture_type: Tipo do gesto
+        #     **kwargs: Parâmetros adicionais do gesto
+            
         # Placeholder para gestos futuros como:
         # - Piscar olho direito vs esquerdo
         # - Manter olhos fechados por tempo prolongado
@@ -109,19 +88,11 @@ class ActionController:
             print(f"Gesto '{gesture_type}' não implementado ainda")
     
     def get_available_actions(self) -> Dict[str, str]:
-        """
-        Retorna lista de ações disponíveis
+        # Retorna lista de ações disponíveis
         
-        Returns:
-            Dict[str, str]: Dicionário com ações e suas teclas
-        """
         return self.config.YOUTUBE_ACTIONS.copy()
     
     def set_action_interval(self, interval: float) -> None:
-        """
-        Define o intervalo mínimo entre ações
+        # Define o intervalo mínimo entre ações
         
-        Args:
-            interval: Intervalo em segundos
-        """
         self.min_action_interval = max(0.1, interval)  # Mínimo de 0.1s

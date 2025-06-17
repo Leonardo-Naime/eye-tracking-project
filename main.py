@@ -1,5 +1,3 @@
-# main
-
 import sys
 from eye_tracking_app import EyeTrackingApp
 

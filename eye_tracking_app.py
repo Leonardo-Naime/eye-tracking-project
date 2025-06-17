@@ -1,5 +1,3 @@
-# Aplicação principal do sistema de controle por eye tracking que integra todos os componentes
-
 import cv2
 from action_controller import ActionController
 from config import EyeTrackingConfig
@@ -7,6 +5,7 @@ from eye_detector import EyeDetector
 
 
 class EyeTrackingApp:
+    # Classe da aplicação principal do sistema que integra todos os componentes
     
     def __init__(self):
         self.config = EyeTrackingConfig()

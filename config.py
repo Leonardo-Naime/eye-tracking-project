@@ -1,11 +1,7 @@
-"""
-Configurações do sistema de controle por eye tracking
-"""
-
 class EyeTrackingConfig:
-    """Configurações principais do sistema"""
+    # Configurações principais do sistema
     
-    # Caminhos de arquivos
+    # Dados dos pontos dos olhos
     SHAPE_PREDICTOR_PATH = "eye_points.dat"
     
     # Configurações da webcam
