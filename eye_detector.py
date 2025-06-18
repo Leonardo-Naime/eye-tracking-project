@@ -16,6 +16,7 @@ class EyeDetector:
         
         # Contadores de estado
         self.eye_closed_frames = 0
+        self.eye_closed_frames2 = 0
         self.absence_frames = 0
         self.last_ear_values = []
         
@@ -91,10 +92,10 @@ class EyeDetector:
         
         # Ambos os olhos fechados
         if ear_left < self.config.EAR_THRESHOLD and ear_right < self.config.EAR_THRESHOLD:
-            self.eye_closed_frames += 1
+            self.eye_closed_frames2 += 1
             
-            if self.eye_closed_frames >= self.config.EAR_CONSECUTIVE_FRAMES:
-                self.eye_closed_frames = 0  # Reset após detectar
+            if self.eye_closed_frames2 >= self.config.EAR_CONSECUTIVE_FRAMES:
+                self.eye_closed_frames2 = 0  # Reset após detectar
                 return True
         else:
             self.eye_closed_frames = 0  # Reset se olho abrir
