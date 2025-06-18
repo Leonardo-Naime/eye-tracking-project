@@ -135,7 +135,14 @@ class EyeDetector:
         
         # Status
         y_offset += 30
-        status = "CLOSED" if ear_left < self.config.EAR_THRESHOLD else "OPEN"
-        color = (0, 0, 255) if status == "CLOSED" else (0, 255, 0)
+        status = "OPEN"
+        if ear_left <= self.config.EAR_THRESHOLD and ear_right <= self.config.EAR_THRESHOLD:
+            status = "BOTH CLOSED"
+        elif ear_left  <= self.config.EAR_THRESHOLD:
+            status = "LEFT CLOSED"
+        elif ear_right <= self.config.EAR_THRESHOLD:
+            status = "RIGHT CLOSED"   
+        
+        color = (0, 255, 0) if status == "OPEN" else (0, 0, 255)
         cv2.putText(frame, f"Status: {status}", (10, y_offset), 
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
