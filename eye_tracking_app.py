@@ -77,8 +77,8 @@ class EyeTrackingApp:
             ear_right = self.eye_detector.calculate_ear(right_eye_points)
 
             
+            # Detecta piscada dupla
             if self.eye_detector.is_blink_twice_detected(ear_left, ear_right):
-                # Ação para piscada dupla
                 self.action_controller.handle_blink_twice_action()
             # Detecta piscada no olho esquerdo
             elif self.eye_detector.is_blink_detected(ear_left):

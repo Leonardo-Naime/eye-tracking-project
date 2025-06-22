@@ -5,10 +5,11 @@ class EyeTrackingConfig:
     SHAPE_PREDICTOR_PATH = "eye_points.dat"
     
     # Configurações da webcam
-    CAMERA_INDEX = 0
+    CAMERA_INDEX = 2 # webcam alternativa
+    CAMERA_INDEX = 0 # webcam padrão
     
     # Parâmetros de detecção ocular
-    EAR_THRESHOLD = 0.14  # Limiar para detecção de olho fechado (0.15-0.25)
+    EAR_THRESHOLD = 0.15  # Limiar para detecção de olho fechado (0.15-0.25)
     EAR_CONSECUTIVE_FRAMES = 7  # Frames consecutivos para confirmar piscada
     
     # Parâmetros de ausência de rosto

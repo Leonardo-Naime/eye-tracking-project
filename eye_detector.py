@@ -95,10 +95,11 @@ class EyeDetector:
             self.eye_closed_frames2 += 1
             
             if self.eye_closed_frames2 >= self.config.EAR_CONSECUTIVE_FRAMES:
+                self.eye_closed_frames = 0  # Reset após detectar
                 self.eye_closed_frames2 = 0  # Reset após detectar
                 return True
         else:
-            self.eye_closed_frames = 0  # Reset se olho abrir
+            self.eye_closed_frames2 = 0  # Reset se olho abrir
             
         return False
     
