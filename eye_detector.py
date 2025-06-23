@@ -15,8 +15,9 @@ class EyeDetector:
         self.predictor = dlib.shape_predictor(config.SHAPE_PREDICTOR_PATH)
         
         # Contadores de estado
-        self.eye_closed_frames = 0
-        self.eye_closed_frames2 = 0
+        self.eye_closed_frames_right = 0
+        self.eye_closed_frames_left = 0
+        self.eye_closed_frames_both = 0
         self.absence_frames = 0
         self.last_ear_values = []
         
@@ -73,17 +74,31 @@ class EyeDetector:
         landmarks = self.predictor(gray, face)
         return landmarks
     
-    def is_blink_detected(self, ear: float) -> bool:
+    def is_blink_detected(self, ear: float, side: str) -> bool:
         # Detecta se houve uma piscada baseada no EAR
+        if(side == 'left'):
+            ear_threshold = self.config.EAR_THRESHOLD_LEFT
+            if ear < ear_threshold:
+                self.eye_closed_frames_left += 1
+                
+                if self.eye_closed_frames_left >= self.config.EAR_CONSECUTIVE_FRAMES:
+                    self.eye_closed_frames_left = 0 
+                    self.eye_closed_frames_right = 0
+                    return True
+            else:
+                self.eye_closed_frames_left = 0  # Reset se olho abrir
+        elif(side == 'right'):
+            ear_threshold = self.config.EAR_THRESHOLD_RIGHT
+            if ear < ear_threshold:
+                self.eye_closed_frames_right += 1
+                
+                if self.eye_closed_frames_right >= self.config.EAR_CONSECUTIVE_FRAMES:
+                    self.eye_closed_frames_right = 0
+                    self.eye_closed_frames_left = 0
+                    return True
+            else:
+                self.eye_closed_frames_right = 0  # Reset se olho abrir
         
-        if ear < self.config.EAR_THRESHOLD:
-            self.eye_closed_frames += 1
-            
-            if self.eye_closed_frames >= self.config.EAR_CONSECUTIVE_FRAMES:
-                self.eye_closed_frames = 0  # Reset após detectar
-                return True
-        else:
-            self.eye_closed_frames = 0  # Reset se olho abrir
             
         return False
     
@@ -91,15 +106,16 @@ class EyeDetector:
         # Detecta se houve uma piscada baseada no EAR
         
         # Ambos os olhos fechados
-        if ear_left < self.config.EAR_THRESHOLD and ear_right < self.config.EAR_THRESHOLD:
-            self.eye_closed_frames2 += 1
+        if ear_left < self.config.EAR_THRESHOLD_LEFT and ear_right < self.config.EAR_THRESHOLD_RIGHT:
+            self.eye_closed_frames_both += 1
             
-            if self.eye_closed_frames2 >= self.config.EAR_CONSECUTIVE_FRAMES:
-                self.eye_closed_frames = 0  # Reset após detectar
-                self.eye_closed_frames2 = 0  # Reset após detectar
+            if self.eye_closed_frames_both >= self.config.EAR_CONSECUTIVE_FRAMES:
+                self.eye_closed_frames_left = 0  # Reset após detectar
+                self.eye_closed_frames_right = 0  # Reset após detectar
+                self.eye_closed_frames_both = 0  # Reset após detectar
                 return True
         else:
-            self.eye_closed_frames2 = 0  # Reset se olho abrir
+            self.eye_closed_frames_both = 0  # Reset se olho abrir
             
         return False
     
@@ -137,11 +153,11 @@ class EyeDetector:
         # Status
         y_offset += 30
         status = "OPEN"
-        if ear_left <= self.config.EAR_THRESHOLD and ear_right <= self.config.EAR_THRESHOLD:
+        if ear_left <= self.config.EAR_THRESHOLD_LEFT and ear_right <= self.config.EAR_THRESHOLD_RIGHT:
             status = "BOTH CLOSED"
-        elif ear_left  <= self.config.EAR_THRESHOLD:
+        elif ear_left  <= self.config.EAR_THRESHOLD_LEFT:
             status = "LEFT CLOSED"
-        elif ear_right <= self.config.EAR_THRESHOLD:
+        elif ear_right <= self.config.EAR_THRESHOLD_RIGHT:
             status = "RIGHT CLOSED"   
         
         color = (0, 255, 0) if status == "OPEN" else (0, 0, 255)

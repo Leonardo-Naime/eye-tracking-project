@@ -9,8 +9,9 @@ class EyeTrackingConfig:
     CAMERA_INDEX = 0 # webcam padrão
     
     # Parâmetros de detecção ocular
-    EAR_THRESHOLD = 0.15  # Limiar para detecção de olho fechado (0.15-0.25)
-    EAR_CONSECUTIVE_FRAMES = 7  # Frames consecutivos para confirmar piscada
+    EAR_THRESHOLD_RIGHT = 0.125
+    EAR_THRESHOLD_LEFT = 0.138
+    EAR_CONSECUTIVE_FRAMES = 5  # Frames consecutivos para confirmar piscada
     
     # Parâmetros de ausência de rosto
     ABSENCE_THRESHOLD = 30  # Frames sem rosto para pausar
