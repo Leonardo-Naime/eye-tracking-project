@@ -16,6 +16,11 @@ class EyeTrackingApp:
         self.isProgramRunning = False
         self.isVideoRunning = True
         self.wasPausedManually = False
+        
+        self.debug = False        
+        
+        self.ear_right_minimum = 100
+        self.ear_left_minimum = 100
     
     def initialize_camera(self) -> bool:
         # Inicializa a câmera
@@ -76,15 +81,24 @@ class EyeTrackingApp:
             ear_left = self.eye_detector.calculate_ear(left_eye_points)
             ear_right = self.eye_detector.calculate_ear(right_eye_points)
 
+            # Atualiza os EAR mínimos
+            if ear_left < self.ear_left_minimum:
+                self.ear_left_minimum = ear_left
+            if ear_right < self.ear_right_minimum:
+                self.ear_right_minimum = ear_right
             
+            if self.debug:
+                print(f"EAR LEFT - Normal: {ear_left:.3f} | Mínimo: {self.ear_left_minimum:.3f}")
+                print(f"EAR RIGHT - Normal: {ear_right:.3f} | Mínimo: {self.ear_right_minimum:.3f}")
+            
+            # Detecta piscada dupla
             if self.eye_detector.is_blink_twice_detected(ear_left, ear_right):
-                # Ação para piscada dupla
                 self.action_controller.handle_blink_twice_action()
             # Detecta piscada no olho esquerdo
-            elif self.eye_detector.is_blink_detected(ear_left):
+            elif self.eye_detector.is_blink_detected(ear_left, 'left'):
                 self.action_controller.handle_blink_action('left')
             # Detecta piscada no olho direito
-            elif self.eye_detector.is_blink_detected(ear_right):
+            elif self.eye_detector.is_blink_detected(ear_right, 'right'):
                 self.action_controller.handle_blink_action('right')
             
             # Desenha pontos do olho se habilitado
