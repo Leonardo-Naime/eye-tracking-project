@@ -26,7 +26,7 @@ class EyeTrackingApp:
         self.volume_mode = False
         self.volume_mode_loading = False
         self.volume_mode_loading_start = 0
-        self.volume_mode_loading_duration = 5  
+        self.volume_mode_loading_duration = 3
         self.volume_mode_message_time = 0
         self.volume_mode_message = ""
           
@@ -114,12 +114,10 @@ class EyeTrackingApp:
             # Fullscreen continua funcionando normalmente
             elif self.eye_detector.is_blink_twice_detected(ear_left, ear_right):
                 self.action_controller.handle_blink_twice_action()
-                return True
         else:
             # Fullscreen (olhos fechados por tempo)
             if self.eye_detector.is_blink_twice_detected(ear_left, ear_right):
                 self.action_controller.handle_blink_twice_action()
-                return True
             # Piscada olho esquerdo: retroceder
             elif self.eye_detector.is_blink_detected(ear_left, 'left'):
                 self.action_controller.handle_blink_action('left')
