@@ -1,4 +1,4 @@
-import cv2
+import cv2 # type: ignore
 from action_controller import ActionController
 from config import EyeTrackingConfig
 from eye_detector import EyeDetector
@@ -11,7 +11,7 @@ class EyeTrackingApp:
         self.config = EyeTrackingConfig()
         self.eye_detector = EyeDetector(self.config)
         self.action_controller = ActionController(self.config)
-        self.cap: Optional[cv2.VideoCapture] = None
+        self.cap: Optional[cv2.VideoCapture] = None # type: ignore
         
         self.isProgramRunning = False
         self.isVideoRunning = True
@@ -21,6 +21,15 @@ class EyeTrackingApp:
         
         self.ear_right_minimum = 100
         self.ear_left_minimum = 100
+
+          
+        # Novas variáveis para controle de temporização
+        self.last_action_time = 0
+        self.action_delay = 0.5  # 500ms entre ações (ajuste conforme necessário)
+        self.blink_count = 0
+        self.last_blink_time = 0
+        self.blink_window = 1.0  # Janela de tempo para contar piscadas múltiplas (1 segundo)
+
     
     def initialize_camera(self) -> bool:
         # Inicializa a câmera
@@ -45,22 +54,21 @@ class EyeTrackingApp:
             return False
     
     def process_frame(self, frame) -> bool:
-        # Processa um frame da câmera
-        
-        # Detecta pontos faciais
+    # Processa um frame da câmera
+    
+    # Detecta pontos faciais
         landmarks = self.eye_detector.detect_faces_and_landmarks(frame)
-        
-        
+    
         if landmarks is None:
-            # Verifica ausência prolongada
+        # Verifica ausência prolongada
             if self.eye_detector.is_absence_detected() and self.isVideoRunning:
                 self.action_controller.handle_absence_action('pause')
                 self.isVideoRunning = False
                 self.wasPausedManually = False
-            
-            # Mostra mensagem na tela
+        
+        # Mostra mensagem na tela
             cv2.putText(frame, "Nenhum rosto detectado", (50, 50), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         else:
             # Despausa vídeo se foi pausado por ausência
             if self.isVideoRunning == False and self.wasPausedManually == False:
@@ -71,8 +79,8 @@ class EyeTrackingApp:
             left_eye_points = self.eye_detector.extract_eye_points(
                 landmarks, self.config.LEFT_EYE_POINTS
             )
-            
-            # Extrai pontos do olho direito
+        
+        # Extrai pontos do olho direito
             right_eye_points = self.eye_detector.extract_eye_points(
                 landmarks, self.config.RIGHT_EYE_POINTS
             ) 
@@ -91,9 +99,19 @@ class EyeTrackingApp:
                 print(f"EAR LEFT - Normal: {ear_left:.3f} | Mínimo: {self.ear_left_minimum:.3f}")
                 print(f"EAR RIGHT - Normal: {ear_right:.3f} | Mínimo: {self.ear_right_minimum:.3f}")
             
-            # Detecta piscada dupla
-            if self.eye_detector.is_blink_twice_detected(ear_left, ear_right):
+            # Verificação de múltiplas piscadas (prioridade máxima)
+            if self.eye_detector.detect_multiple_blinks(ear_left, ear_right, blink_count=3):
+                self.action_controller.handle_volume_action('up')
+                return True
+            elif self.eye_detector.detect_multiple_blinks(ear_left, ear_right, blink_count=2):
+                self.action_controller.handle_volume_action('down')
+                return True
+            
+            # --- PRIORIDADE: Fullscreen (olhos fechados por tempo) ---
+            elif self.eye_detector.is_blink_twice_detected(ear_left, ear_right):
                 self.action_controller.handle_blink_twice_action()
+                return True
+
             # Detecta piscada no olho esquerdo
             elif self.eye_detector.is_blink_detected(ear_left, 'left'):
                 self.action_controller.handle_blink_action('left')

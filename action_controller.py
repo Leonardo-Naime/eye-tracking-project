@@ -1,4 +1,4 @@
-import pyautogui
+import pyautogui # type: ignore
 import time
 from typing import Dict, Any
 from config import EyeTrackingConfig
@@ -109,3 +109,14 @@ class ActionController:
         # Define o intervalo mínimo entre ações
         
         self.min_action_interval = max(0.1, interval)  # Mínimo de 0.1s
+    
+    def handle_volume_action(self, direction: str) -> None:
+        # Aumenta ou diminui o volume em 10 unidades (10x 'up' ou 'down')
+        if direction == 'up':
+            print("Aumentando volume (10)")
+            for _ in range(10):
+                self.execute_youtube_action('volume_up')
+        elif direction == 'down':
+            print("Diminuindo volume (10)")
+            for _ in range(10):
+                self.execute_youtube_action('volume_down')
