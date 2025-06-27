@@ -1,135 +1,186 @@
 # Eye Tracking YouTube Controller
 
-Sistema de controle do YouTube através de movimentos oculares usando OpenCV, dlib e eye tracking.
+Sistema avançado de controle do YouTube através de movimentos oculares usando OpenCV, dlib e eye tracking com múltiplas funcionalidades baseadas em gestos.
 
 ## 🎯 Funcionalidades
 
-- **Detecção de Piscadas**: Avança o vídeo em 5 segundos
+### Controles por Gestos Oculares
+- **Piscada Olho Esquerdo**: Retrocede 5 segundos no vídeo
+- **Piscada Olho Direito**: Avança 5 segundos no vídeo
+- **Olhos Fechados (1.5s)**: Alterna tela cheia
+- **Olhos Fechados (3s)**: Ativa/desativa modo volume
 - **Detecção de Ausência**: Pausa automaticamente quando não detecta rosto
-- **Interface Visual**: Mostra pontos dos olhos e informações de debug
-- **Controles Manuais**: Teclas de teste para ações do YouTube
+
+### Modo Volume
+- **Piscada Olho Esquerdo** (no modo volume): Diminui volume
+- **Piscada Olho Direito** (no modo volume): Aumenta volume
+- Interface visual para indicar quando o modo está ativo
+
+### Interface Visual
+- Mostra pontos dos olhos em tempo real
+- Barra de progresso para gestos de tempo prolongado
+- Indicadores visuais para diferentes modos
+- Informações de debug com valores EAR
+- Feedback visual para todas as ações
 
 ## 📁 Estrutura do Projeto
 
 ```
-eye_control/
-├── main.py              # Aplicação principal
-├── config.py            # Configurações do sistema
-├── eye_detector.py      # Detecção e análise ocular
-├── action_controller.py # Controle de ações
-├── requirements.txt     # Dependências
-├── README.md           # Documentação
-└── eye_points.dat      # Modelo de pontos faciais (dlib)
+eye-tracking-project/
+├── main.py                 # Ponto de entrada da aplicação
+├── eye_tracking_app.py     # Aplicação principal e lógica de integração
+├── config.py              # Configurações do sistema
+├── eye_detector.py        # Detecção e análise ocular
+├── action_controller.py   # Controle de ações e integração com YouTube
+├── requirements.txt       # Dependências Python
+├── README.md             # Documentação do projeto
+└── eye_points.dat        # Modelo de pontos faciais (dlib)
 ```
 
 ## 🚀 Como Usar
 
-### 1. Instalação
+### 1. Instalação das Dependências
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Baixar Modelo do dlib
-
-Baixe o arquivo `shape_predictor_68_face_landmarks.dat` e renomeie para `eye_points.dat`:
+### 2. Executar a Aplicação
 
 ```bash
-wget http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
-bunzip2 shape_predictor_68_face_landmarks.dat.bz2
-mv shape_predictor_68_face_landmarks.dat eye_points.dat
+python3 main.py
 ```
 
-### 3. Executar
+## 🎮 Controles e Gestos
 
-```bash
-python main.py
-```
+### Gestos Automáticos
 
-## ⌨️ Controles
+| Gesto | Ação | Descrição |
+|-------|------|-----------|
+| Piscada olho esquerdo | ⏪ Retroceder 5s | No modo normal |
+| Piscada olho direito | ⏩ Avançar 5s | No modo normal |
+| Olhos fechados 1.5s | 🔳 Fullscreen | Alterna tela cheia |
+| Olhos fechados 3s | 🔊 Modo Volume | Ativa/desativa controle de volume |
+| Ausência de rosto | ⏸️ Pause/Play | Pausa quando sai, retoma quando volta |
 
-### Automáticos
-- **Piscada**: Avança 5 segundos no vídeo
-- **Ausência de rosto**: Pausa o vídeo
+### Modo Volume (após ativar)
 
-### Manuais (para teste)
-- `q`: Sair da aplicação
-- `p`: Play/Pause
-- `f`: Tela cheia
-- `m`: Mudo
+| Gesto | Ação | Descrição |
+|-------|------|-----------|
+| Piscada olho esquerdo | 🔉 Volume - | Diminui volume (10 unidades) |
+| Piscada olho direito | 🔊 Volume + | Aumenta volume (10 unidades) |
+| Olhos fechados 3s | ❌ Desativar | Sai do modo volume |
 
-## ⚙️ Configurações
+### Controles Manuais (para teste)
+
+| Tecla | Ação |
+|-------|------|
+| `q` | Sair da aplicação |
+| `p` | Play/Pause manual |
+| `m` | Mudo manual |
+
+## ⚙️ Configurações Personalizáveis
 
 Edite `config.py` para ajustar:
 
-- `EAR_THRESHOLD`: Sensibilidade de detecção (0.15-0.25)
-- `EAR_CONSECUTIVE_FRAMES`: Frames necessários para confirmar piscada
-- `ABSENCE_THRESHOLD`: Frames sem rosto para pausar
-- Ações do YouTube e teclas correspondentes
+### Sensibilidade de Detecção
+```python
+EAR_THRESHOLD_RIGHT = 0.131  # Limiar olho direito
+EAR_THRESHOLD_LEFT = 0.138   # Limiar olho esquerdo
+EAR_CONSECUTIVE_FRAMES = 5   # Frames para confirmar piscada
+```
 
-## 🎮 Ações Disponíveis
+### Detecção de Ausência
+```python
+ABSENCE_THRESHOLD = 30  # Frames sem rosto para pausar
+```
 
-| Ação | Tecla | Descrição |
-|------|-------|-----------|
-| play_pause | space | Play/Pause |
-| forward_5s | right | Avançar 5s |
-| backward_5s | left | Retroceder 5s |
-| forward_10s | l | Avançar 10s |
-| backward_10s | j | Retroceder 10s |
-| volume_up | up | Volume + |
-| volume_down | down | Volume - |
-| mute | m | Mudo |
-| fullscreen | f | Tela cheia |
-| next_video | shift+n | Próximo vídeo |
-| previous_video | shift+p | Vídeo anterior |
+### Câmera
+```python
+CAMERA_INDEX = 0  # Índice da webcam (0 = padrão)
+```
 
-## 🔧 Personalização
+### Ações do YouTube
+```python
+YOUTUBE_ACTIONS = {
+    'play_pause': 'space',
+    'forward_5s': 'right',
+    'backward_5s': 'left',
+    'volume_up': 'up',
+    'volume_down': 'down',
+    'fullscreen': 'f'
+}
+```
 
-### Adicionar Nova Ação
+## 🎨 Interface Visual
 
-1. Edite `YOUTUBE_ACTIONS` em `config.py`
-2. Implemente a lógica em `action_controller.py`
-3. Associe ao gesto desejado em `main.py`
+### Feedback em Tempo Real
+- **Pontos dos olhos**: Círculos verdes nos pontos detectados
+- **Valores EAR**: Mostrados no canto superior esquerdo
+- **Status dos olhos**: OPEN/LEFT CLOSED/RIGHT CLOSED/BOTH CLOSED
 
-### Adicionar Novo Gesto
+### Barra de Progresso
+- **Amarelo**: Carregando para fullscreen (0-1.5s)
+- **Laranja**: Carregando para modo volume (1.5-3s)
+- **Magenta**: Modo volume pronto (3s+)
+- **Linha branca**: Marca do fullscreen (1.5s)
 
-1. Implemente detecção em `eye_detector.py`
-2. Adicione ação correspondente em `action_controller.py`
-3. Integre no loop principal em `main.py`
+### Indicadores de Modo
+- **"MODO VOLUME ATIVO"**: Mostrado quando o modo volume está ligado
+- **Mensagens temporárias**: Confirmação de ações executadas
+
+### Ajustar Cooldowns
+
+```python
+# Em action_controller.py
+self.min_action_interval = 0.5      # Intervalo geral entre ações
+self.fullscreen_cooldown = 1.0      # Cooldown específico para fullscreen
+```
+
+### Personalizar Tempos de Gesto
+
+```python
+# Em eye_tracking_app.py
+self.fullscreen_threshold = 1.5     # Tempo para fullscreen
+self.volume_mode_threshold = 3.0    # Tempo para modo volume
+```
 
 ## 🐛 Resolução de Problemas
 
-### Câmera não funciona
-- Verifique se outra aplicação está usando a câmera
-- Tente alterar `CAMERA_INDEX` em `config.py`
+### Câmera não detectada
+```bash
+# Teste diferentes índices de câmera
+# Edite CAMERA_INDEX em config.py: 0, 1, 2...
+```
 
-### Detecção imprecisa
-- Ajuste `EAR_THRESHOLD` em `config.py`
-- Melhore a iluminação do ambiente
-- Posicione-se a uma distância adequada da câmera
+### Detecção muito sensível/pouco sensível
+```python
+# Ajuste os limiares EAR em config.py
+EAR_THRESHOLD_RIGHT = 0.131  # Diminua para menos sensível
+EAR_THRESHOLD_LEFT = 0.138   # Aumente para mais sensível
+```
 
-### Ações muito frequentes
-- Aumente `min_action_interval` em `ActionController`
-- Ajuste `EAR_CONSECUTIVE_FRAMES` para mais frames
+### Ações executando muito rápido
+```python
+# Aumente os cooldowns em action_controller.py
+self.min_action_interval = 1.0  # Era 0.5
+```
 
-## 🚀 Próximas Funcionalidades
+### Fullscreen não funciona
+- Certifique-se de que o YouTube está na aba ativa
+- Alguns navegadores podem bloquear automação
+- Teste a tecla 'f' manualmente no YouTube
 
-- [ ] Detecção de piscada de olho específico (esquerdo/direito)
-- [ ] Gestos com movimentos de cabeça
-- [ ] Interface gráfica para configurações
-- [ ] Calibração automática de sensibilidade
-- [ ] Suporte a outras plataformas (Netflix, etc.)
-- [ ] Gravação e replay de gestos
-- [ ] Controle de volume por duração da piscada
+## 📊 Valores de Referência
 
-## 🤝 Contribuindo
+### EAR (Eye Aspect Ratio)
+- **Olho aberto**: ~0.25-0.35
+- **Olho fechado**: ~0.10-0.15
+- **Limiar recomendado**: 0.13-0.14
 
-1. Fork o projeto
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
+### Timing dos Gestos
+- **Piscada normal**: ~0.1-0.3s
+- **Fullscreen**: 1.5s de olhos fechados
+- **Modo volume**: 3.0s de olhos fechados
 
-## 📄 Licença
-
-Este projeto está sob licença MIT. Veja LICENSE para detalhes.
+**Nota**: Certifique-se de que o YouTube está na aba ativa do navegador para que os controles funcionem corretamente.
