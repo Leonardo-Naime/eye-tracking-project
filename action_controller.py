@@ -1,4 +1,4 @@
-import pyautogui
+import pyautogui # type: ignore
 import time
 from typing import Dict, Any
 from config import EyeTrackingConfig
@@ -10,16 +10,29 @@ class ActionController:
     def __init__(self, config: EyeTrackingConfig):
         self.config = config
         self.last_action_time = 0
+        self.last_fullscreen_time = 0  # Cooldown específico para fullscreen
         self.min_action_interval = 0.5  # Segundos entre ações para evitar spam
+        self.fullscreen_cooldown = 3.0  # Cooldown maior para fullscreen (3 segundos)
         
         # Configurações do pyautogui
         pyautogui.PAUSE = 0.1
         pyautogui.FAILSAFE = True  # Move mouse para canto superior esquerdo para parar
     
-    def can_execute_action(self) -> bool:
+    def can_execute_action(self, action_name: str = None) -> bool:
         # Verifica se pode executar uma ação (evita spam)
+        # Args:
+        #     action_name: Nome da ação para verificar cooldown específico
         
         current_time = time.time()
+        
+        # Se for ação de fullscreen, verifica cooldown específico
+        if action_name == 'fullscreen':
+            if current_time - self.last_fullscreen_time >= self.fullscreen_cooldown:
+                self.last_fullscreen_time = current_time
+                return True
+            return False
+        
+        # Para outras ações, usa o cooldown padrão
         if current_time - self.last_action_time >= self.min_action_interval:
             self.last_action_time = current_time
             return True
@@ -28,7 +41,7 @@ class ActionController:
     def execute_youtube_action(self, action_name: str) -> bool:
         # Executa uma ação específica do YouTube
         
-        if not self.can_execute_action():
+        if not self.can_execute_action(action_name):
             return False
             
         if action_name not in self.config.YOUTUBE_ACTIONS:
@@ -64,8 +77,10 @@ class ActionController:
     
     def handle_blink_twice_action(self) -> None:
         # Ação executada quando uma piscada dupla é detectada
-        self.execute_youtube_action('fullscreen')
-        print("Abriu tela cheia")
+        if self.execute_youtube_action('fullscreen'):
+            print("Abriu/fechou tela cheia")
+        else:
+            print("Fullscreen em cooldown, aguarde...")
     
     def handle_absence_action(self, action_name: str) -> None:
         # Ação executada quando há ausência prolongada de rosto
@@ -109,3 +124,32 @@ class ActionController:
         # Define o intervalo mínimo entre ações
         
         self.min_action_interval = max(0.1, interval)  # Mínimo de 0.1s
+    
+    def handle_volume_action(self, direction: str) -> None:
+        # Aumenta ou diminui o volume em 10 unidades (10x 'up' ou 'down')
+        if direction == 'up':
+            print("Aumentando volume (10)")
+            for _ in range(10):
+                self.execute_youtube_action('volume_up')
+        elif direction == 'down':
+            print("Diminuindo volume (10)")
+            for _ in range(10):
+                self.execute_youtube_action('volume_down')
+    
+    def set_fullscreen_cooldown(self, cooldown: float) -> None:
+        # Define o cooldown específico para fullscreen
+        # Args:
+        #     cooldown: Tempo em segundos (mínimo 1.0s)
+        
+        self.fullscreen_cooldown = max(1.0, cooldown)
+    
+    def get_cooldown_status(self) -> Dict[str, float]:
+        # Retorna o status dos cooldowns
+        # Returns:
+        #     Dict com tempo restante para cada tipo de ação
+        
+        current_time = time.time()
+        return {
+            'regular_actions': max(0, self.min_action_interval - (current_time - self.last_action_time)),
+            'fullscreen': max(0, self.fullscreen_cooldown - (current_time - self.last_fullscreen_time))
+        }
