@@ -1,5 +1,5 @@
 import time
-import cv2 # type: ignore
+import cv2
 from action_controller import ActionController
 from config import EyeTrackingConfig
 from eye_detector import EyeDetector
@@ -24,25 +24,17 @@ class EyeTrackingApp:
         self.ear_left_minimum = 100
 
         self.volume_mode = False
-        self.volume_mode_loading = False
-        self.volume_mode_loading_start = 0
-        self.volume_mode_loading_duration = 3
         self.volume_mode_message_time = 0
         self.volume_mode_message = ""
-          
-        # Novas variáveis para controle de temporização
-        self.last_action_time = 0
-        self.action_delay = 0.5  # 500ms entre ações (ajuste conforme necessário)
-        self.blink_count = 0
-        self.last_blink_time = 0
-        self.blink_window = 1.0  # Janela de tempo para contar piscadas múltiplas (1 segundo)
-
+        
+        # Nova lógica para controle de tempo dos olhos fechados
+        self.eyes_closed_start_time = 0
+        self.eyes_were_closed = False
+        self.fullscreen_threshold = 0.75  # 1.5 segundos para fullscreen
+        self.volume_mode_threshold = 1.5  # 3 segundos para modo volume
     
     def initialize_camera(self) -> bool:
         # Inicializa a câmera
-        
-        # Returns:
-        #     bool: True se câmera foi inicializada com sucesso
         try:
             self.cap = cv2.VideoCapture(self.config.CAMERA_INDEX)
             if not self.cap.isOpened():
@@ -73,6 +65,8 @@ class EyeTrackingApp:
                 self.wasPausedManually = False
             cv2.putText(frame, "Nenhum rosto detectado", (50, 50), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            # Reset do controle de olhos fechados se não há rosto
+            self.eyes_were_closed = False
             return True
 
         if self.isVideoRunning == False and self.wasPausedManually == False:
@@ -84,46 +78,57 @@ class EyeTrackingApp:
         ear_left = self.eye_detector.calculate_ear(left_eye_points)
         ear_right = self.eye_detector.calculate_ear(right_eye_points)
 
-        # --- Lógica de ativação/desativação do modo volume ---
+        # --- Nova lógica: mede tempo e executa ação apenas quando olhos abrem ---
         eyes_closed = ear_left < self.config.EAR_THRESHOLD_LEFT and ear_right < self.config.EAR_THRESHOLD_RIGHT
+        current_time = time.time()
+        
         if eyes_closed:
-            if not self.volume_mode_loading:
-                self.volume_mode_loading = True
-                self.volume_mode_loading_start = time.time()
+            if not self.eyes_were_closed:
+                # Início do fechamento dos olhos
+                self.eyes_closed_start_time = current_time
+                self.eyes_were_closed = True
             else:
-                elapsed = time.time() - self.volume_mode_loading_start
-                if elapsed >= self.volume_mode_loading_duration:
+                # Olhos continuam fechados - apenas mostra feedback visual
+                closed_duration = current_time - self.eyes_closed_start_time
+                self.draw_eye_close_feedback(frame, closed_duration)
+        else:
+            # Olhos abertos - verifica se precisa executar ação baseada no tempo total
+            if self.eyes_were_closed:
+                total_closed_time = current_time - self.eyes_closed_start_time
+                
+                # Decide a ação baseada no tempo total usando if/elif para evitar conflitos
+                if total_closed_time >= self.volume_mode_threshold:
+                    # Tempo longo (≥3s): alterna modo volume
                     self.volume_mode = not self.volume_mode
-                    self.volume_mode_loading = False
-                    self.volume_mode_message_time = time.time()
+                    self.volume_mode_message_time = current_time
                     if self.volume_mode:
                         self.volume_mode_message = "Modo Volume Ativado"
                     else:
                         self.volume_mode_message = "Modo Volume Desativado"
-        else:
-            self.volume_mode_loading = False
-
-        # --- Gestos no modo volume ---
-        if self.volume_mode:
-            # Piscada olho direito: aumentar volume
-            if self.eye_detector.is_blink_detected(ear_right, 'right'):
-                self.action_controller.handle_volume_action('up')
-            # Piscada olho esquerdo: diminuir volume
-            elif self.eye_detector.is_blink_detected(ear_left, 'left'):
-                self.action_controller.handle_volume_action('down')
-            # Fullscreen continua funcionando normalmente
-            elif self.eye_detector.is_blink_twice_detected(ear_left, ear_right):
-                self.action_controller.handle_blink_twice_action()
-        else:
-            # Fullscreen (olhos fechados por tempo)
-            if self.eye_detector.is_blink_twice_detected(ear_left, ear_right):
-                self.action_controller.handle_blink_twice_action()
-            # Piscada olho esquerdo: retroceder
-            elif self.eye_detector.is_blink_detected(ear_left, 'left'):
-                self.action_controller.handle_blink_action('left')
-            # Piscada olho direito: avançar
-            elif self.eye_detector.is_blink_detected(ear_right, 'right'):
-                self.action_controller.handle_blink_action('right')
+                        
+                elif total_closed_time >= self.fullscreen_threshold:
+                    # Tempo médio (≥1.5s e <3s): fullscreen
+                      # Só executa fullscreen se não estiver no modo volume
+                    self.action_controller.handle_blink_twice_action()
+                
+                # Reset do controle
+                self.eyes_were_closed = False
+            else:
+                if self.volume_mode:
+                    # Piscada olho direito: aumentar volume
+                    if self.eye_detector.is_blink_detected(ear_right, 'right'):
+                        self.action_controller.handle_volume_action('up')
+                    # Piscada olho esquerdo: diminuir volume
+                    elif self.eye_detector.is_blink_detected(ear_left, 'left'):
+                        self.action_controller.handle_volume_action('down')
+                else:
+                    # Modo normal - piscadas individuais para navegação
+                    # Piscada olho esquerdo: retroceder
+                    if self.eye_detector.is_blink_detected(ear_left, 'left'):
+                        self.action_controller.handle_blink_action('left')
+                    # Piscada olho direito: avançar
+                    elif self.eye_detector.is_blink_detected(ear_right, 'right'):
+                        self.action_controller.handle_blink_action('right')
 
         # Desenhar pontos e debug
         if self.config.SHOW_EYE_POINTS:
@@ -134,24 +139,65 @@ class EyeTrackingApp:
 
         return True
     
-    def draw_volume_mode_ui(self, frame):
-        # Mostra barra de carregamento e mensagens do modo volume
+    def draw_eye_close_feedback(self, frame, closed_duration):
+        # Mostra barra de progresso com marcador visual para fullscreen no meio
         h, w = frame.shape[:2]
-        if self.volume_mode_loading:
-            elapsed = time.time() - self.volume_mode_loading_start
-            progress = min(elapsed / self.volume_mode_loading_duration, 1.0)
-            bar_width = int(w * 0.6)
-            bar_height = 30
-            x = int((w - bar_width) / 2)
-            y = int(h * 0.1)
-            cv2.rectangle(frame, (x, y), (x + bar_width, y + bar_height), (200, 200, 200), 2)
-            cv2.rectangle(frame, (x, y), (x + int(bar_width * progress), y + bar_height), (0, 255, 0), -1)
-            txt = "Ativando Modo Volume..." if not self.volume_mode else "Desativando Modo Volume..."
-            cv2.putText(frame, txt, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        
+        # Calcula progresso total até o modo volume (3s)
+        progress = min(closed_duration / self.volume_mode_threshold, 1.0)
+        
+        # Posição da barra
+        bar_width = int(w * 0.6)
+        bar_height = 30
+        x = int((w - bar_width) / 2)
+        y = int(h * 0.1)
+        
+        # Cores baseadas no estágio atual
+        if closed_duration < self.fullscreen_threshold:
+            color = (0, 255, 255)  # Amarelo - carregando para fullscreen
+            text = f"Carregando Fullscreen: {closed_duration:.1f}s / {self.fullscreen_threshold}s"
+        elif closed_duration < self.volume_mode_threshold:
+            color = (0, 165, 255)  # Laranja - entre fullscreen e modo volume
+            text = f"Carregando Modo Volume: {closed_duration:.1f}s / {self.volume_mode_threshold}s"
+        else:
+            color = (255, 0, 255)  # Magenta - modo volume pronto
+            text = f"Modo Volume Pronto: {closed_duration:.1f}s"
+        
+        # Desenha fundo da barra (cinza)
+        cv2.rectangle(frame, (x, y), (x + bar_width, y + bar_height), (100, 100, 100), -1)
+        
+        # Desenha progresso atual
+        cv2.rectangle(frame, (x, y), (x + int(bar_width * progress), y + bar_height), color, -1)
+        
+        # Marca visual para fullscreen no meio da barra (linha branca vertical)
+        fullscreen_pos = int(x + bar_width * (self.fullscreen_threshold / self.volume_mode_threshold))
+        cv2.line(frame, (fullscreen_pos, y), (fullscreen_pos, y + bar_height), (255, 255, 255), 3)
+        
+        # Borda da barra
+        cv2.rectangle(frame, (x, y), (x + bar_width, y + bar_height), (255, 255, 255), 2)
+        
+        # Texto de feedback
+        cv2.putText(frame, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+        
+        # Legendas das marcações
+        cv2.putText(frame, f"FS: {self.fullscreen_threshold}s", (fullscreen_pos - 30, y + bar_height + 20), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+        cv2.putText(frame, f"Vol: {self.volume_mode_threshold}s", (x + bar_width - 60, y + bar_height + 20), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+    
+    def draw_volume_mode_ui(self, frame):
+        # Mostra mensagens do modo volume
+        h, w = frame.shape[:2]
+        
+        # Mensagem de ativação/desativação do modo volume
         if self.volume_mode_message and (time.time() - self.volume_mode_message_time < 2):
-            cv2.putText(frame, self.volume_mode_message, (int(w*0.35), int(h*0.15)), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 3)
+            cv2.putText(frame, self.volume_mode_message, (int(w*0.25), int(h*0.15)), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 3)
+        
+        # Indicador permanente do modo volume
         if self.volume_mode:
-            cv2.putText(frame, "MODO VOLUME ATIVO", (int(w*0.35), int(h*0.08)), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
+            cv2.putText(frame, "MODO VOLUME ATIVO", (int(w*0.3), int(h*0.08)), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
     
     def run(self) -> None:
         # Loop que acontece enquanto o programa está rodando
