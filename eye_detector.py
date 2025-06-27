@@ -4,7 +4,7 @@ import numpy as np# type: ignore
 from scipy.spatial import distance# type: ignore
 from typing import List, Tuple, Optional
 from config import EyeTrackingConfig
-
+import time
 
 class EyeDetector:
     # Classe responsável pela detecção e análise dos olhos
@@ -200,4 +200,63 @@ class EyeDetector:
                 return True
             else:
                 self.both_blink_timestamps.pop(0)
+        return False
+    
+    def is_double_blink_detected(self, ear_left: float, ear_right: float) -> bool:
+        # Detecta dupla piscada rápida com ambos os olhos
+        
+        # Inicialização na primeira execução
+        if not hasattr(self, 'double_blink_state'):
+            self.double_blink_state = {
+                'last_state': 'open',
+                'blink_count': 0,
+                'last_blink_time': 0,
+                'sequence_start': 0,
+                'close_start_time': 0
+            }
+        
+        current_time = time.time()
+        both_eyes_closed = ear_left < self.config.EAR_THRESHOLD_LEFT and ear_right < self.config.EAR_THRESHOLD_RIGHT
+        
+        # Máquina de estados para detectar dupla piscada
+        if both_eyes_closed and self.double_blink_state['last_state'] == 'open':
+            # Transição: aberto -> fechado (início de uma piscada)
+            self.double_blink_state['last_state'] = 'closed'
+            self.double_blink_state['close_start_time'] = current_time
+            
+        elif not both_eyes_closed and self.double_blink_state['last_state'] == 'closed':
+            # Transição: fechado -> aberto (fim de uma piscada)
+            blink_duration = current_time - self.double_blink_state['close_start_time']
+            
+            # Só conta como piscada válida se foi rápida (menos de 0.5s)
+            if blink_duration <= 0.5:
+                self.double_blink_state['last_state'] = 'open'
+                self.double_blink_state['blink_count'] += 1
+                self.double_blink_state['last_blink_time'] = current_time
+                
+                # Se é a primeira piscada da sequência
+                if self.double_blink_state['blink_count'] == 1:
+                    self.double_blink_state['sequence_start'] = current_time
+                
+                # Se completou duas piscadas
+                elif self.double_blink_state['blink_count'] == 2:
+                    sequence_duration = current_time - self.double_blink_state['sequence_start']
+                    
+                    # Verifica se as duas piscadas foram rápidas (dentro de 1.5 segundos)
+                    if sequence_duration <= 1.5:
+                        self.double_blink_state['blink_count'] = 0  # Reset
+                        return True
+                    else:
+                        # Se demorou muito, reinicia a contagem
+                        self.double_blink_state['blink_count'] = 1
+                        self.double_blink_state['sequence_start'] = current_time
+            else:
+                # Se a piscada foi muito longa, reseta
+                self.double_blink_state['last_state'] = 'open'
+                self.double_blink_state['blink_count'] = 0
+        
+        # Reset se passou muito tempo desde a última piscada
+        if current_time - self.double_blink_state['last_blink_time'] > 2.0:
+            self.double_blink_state['blink_count'] = 0
+        
         return False

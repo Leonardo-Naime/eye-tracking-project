@@ -29,13 +29,11 @@ class EyeTrackingApp:
         self.volume_mode_loading_duration = 3
         self.volume_mode_message_time = 0
         self.volume_mode_message = ""
-          
-        # Novas variáveis para controle de temporização
-        self.last_action_time = 0
-        self.action_delay = 0.5  # 500ms entre ações (ajuste conforme necessário)
-        self.blink_count = 0
-        self.last_blink_time = 0
-        self.blink_window = 1.0  # Janela de tempo para contar piscadas múltiplas (1 segundo)
+        
+        # Novo sistema de bloqueio para evitar conflitos
+        self.gesture_cooldown = False
+        self.gesture_cooldown_start = 0
+        self.gesture_cooldown_duration = 1.5  # 1.5s de bloqueio após dupla piscada
 
     
     def initialize_camera(self) -> bool:
@@ -84,26 +82,85 @@ class EyeTrackingApp:
         ear_left = self.eye_detector.calculate_ear(left_eye_points)
         ear_right = self.eye_detector.calculate_ear(right_eye_points)
 
-        # --- Lógica de ativação/desativação do modo volume ---
-        eyes_closed = ear_left < self.config.EAR_THRESHOLD_LEFT and ear_right < self.config.EAR_THRESHOLD_RIGHT
-        if eyes_closed:
-            if not self.volume_mode_loading:
-                self.volume_mode_loading = True
-                self.volume_mode_loading_start = time.time()
+        # --- Gerencia cooldown de gestos ---
+        if self.gesture_cooldown:
+            if time.time() - self.gesture_cooldown_start >= self.gesture_cooldown_duration:
+                self.gesture_cooldown = False
             else:
-                elapsed = time.time() - self.volume_mode_loading_start
-                if elapsed >= self.volume_mode_loading_duration:
-                    self.volume_mode = not self.volume_mode
-                    self.volume_mode_loading = False
-                    self.volume_mode_message_time = time.time()
-                    if self.volume_mode:
-                        self.volume_mode_message = "Modo Volume Ativado"
-                    else:
-                        self.volume_mode_message = "Modo Volume Desativado"
-        else:
-            self.volume_mode_loading = False
+                # Durante cooldown, apenas desenha e retorna
+                if self.config.SHOW_EYE_POINTS:
+                    self.eye_detector.draw_eye_points(frame, left_eye_points)
+                    self.eye_detector.draw_eye_points(frame, right_eye_points)
+                if self.config.SHOW_DEBUG_INFO:
+                    self.eye_detector.add_debug_info(frame, ear_left, ear_right)
+                return True
 
-        # --- Gestos no modo volume ---
+        # --- PRIORIDADE 1: Detectar dupla piscada ---
+        if self.eye_detector.is_double_blink_detected(ear_left, ear_right):
+            # Cancela qualquer carregamento em andamento
+            self.volume_mode_loading = False
+            if hasattr(self, 'continuous_close_start'):
+                delattr(self, 'continuous_close_start')
+            
+            # Ativa cooldown para bloquear outros gestos
+            self.gesture_cooldown = True
+            self.gesture_cooldown_start = time.time()
+            
+            # Executa ação
+            self.action_controller.handle_blink_twice_action()
+            return True
+
+        # --- PRIORIDADE 2: Lógica de ativação/desativação do modo volume ---
+        # SÓ funciona se não estiver em cooldown
+        if not self.gesture_cooldown:
+            eyes_closed = ear_left < self.config.EAR_THRESHOLD_LEFT and ear_right < self.config.EAR_THRESHOLD_RIGHT
+            
+            if eyes_closed:
+                # Verifica se não é uma piscada em andamento
+                if not hasattr(self, 'continuous_close_start'):
+                    self.continuous_close_start = time.time()
+                
+                # Só considera para carregamento após 1.0s de olhos fechados continuamente
+                continuous_duration = time.time() - self.continuous_close_start
+                
+                if continuous_duration >= 1.0:  # Aumentei o delay
+                    if not self.volume_mode_loading:
+                        self.volume_mode_loading = True
+                        self.volume_mode_loading_start = time.time()
+                    else:
+                        elapsed = time.time() - self.volume_mode_loading_start
+                        if elapsed >= self.volume_mode_loading_duration:
+                            self.volume_mode = not self.volume_mode
+                            self.volume_mode_loading = False
+                            self.volume_mode_message_time = time.time()
+                            if self.volume_mode:
+                                self.volume_mode_message = "Modo Volume Ativado"
+                            else:
+                                self.volume_mode_message = "Modo Volume Desativado"
+                            # Reset do contador contínuo
+                            if hasattr(self, 'continuous_close_start'):
+                                delattr(self, 'continuous_close_start')
+                            return True
+            else:
+                # Olhos abertos - reseta contadores
+                self.volume_mode_loading = False
+                if hasattr(self, 'continuous_close_start'):
+                    delattr(self, 'continuous_close_start')
+
+        # --- TRAVA: Se está carregando modo volume, bloqueia outros gestos ---
+        if self.volume_mode_loading:
+            # Durante o carregamento, bloqueia outros gestos
+            
+            # Desenhar pontos e debug
+            if self.config.SHOW_EYE_POINTS:
+                self.eye_detector.draw_eye_points(frame, left_eye_points)
+                self.eye_detector.draw_eye_points(frame, right_eye_points)
+            if self.config.SHOW_DEBUG_INFO:
+                self.eye_detector.add_debug_info(frame, ear_left, ear_right)
+            
+            return True  # Sai da função durante carregamento
+
+        # --- PRIORIDADE 3: Gestos normais (sem carregamento ativo e sem cooldown) ---
         if self.volume_mode:
             # Piscada olho direito: aumentar volume
             if self.eye_detector.is_blink_detected(ear_right, 'right'):
@@ -111,15 +168,10 @@ class EyeTrackingApp:
             # Piscada olho esquerdo: diminuir volume
             elif self.eye_detector.is_blink_detected(ear_left, 'left'):
                 self.action_controller.handle_volume_action('down')
-            # Fullscreen continua funcionando normalmente
-            elif self.eye_detector.is_blink_twice_detected(ear_left, ear_right):
-                self.action_controller.handle_blink_twice_action()
         else:
-            # Fullscreen (olhos fechados por tempo)
-            if self.eye_detector.is_blink_twice_detected(ear_left, ear_right):
-                self.action_controller.handle_blink_twice_action()
+            # --- Gestos do modo normal ---
             # Piscada olho esquerdo: retroceder
-            elif self.eye_detector.is_blink_detected(ear_left, 'left'):
+            if self.eye_detector.is_blink_detected(ear_left, 'left'):
                 self.action_controller.handle_blink_action('left')
             # Piscada olho direito: avançar
             elif self.eye_detector.is_blink_detected(ear_right, 'right'):
