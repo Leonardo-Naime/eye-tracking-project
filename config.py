@@ -5,11 +5,11 @@ class EyeTrackingConfig:
     SHAPE_PREDICTOR_PATH = "eye_points.dat"
     
     # Configurações da webcam
-    #CAMERA_INDEX = 2 # webcam alternativa
+    # CAMERA_INDEX = 2 # webcam alternativa
     CAMERA_INDEX = 0 # webcam padrão
     
     # Parâmetros de detecção ocular
-    EAR_THRESHOLD_RIGHT = 0.130
+    EAR_THRESHOLD_RIGHT = 0.131
     EAR_THRESHOLD_LEFT = 0.138
     EAR_CONSECUTIVE_FRAMES = 5  # Frames consecutivos para confirmar piscada
     
@@ -31,12 +31,9 @@ class EyeTrackingConfig:
     # Ações do YouTube
     YOUTUBE_ACTIONS = {
         'play_pause': 'space',
-        # 'next_video': 'shift+n',
-        # 'previous_video': 'shift+p',
         'forward_5s': 'right',
         'backward_5s': 'left',
         'volume_up': 'up',
         'volume_down': 'down',
-        #'mute': 'm',
         'fullscreen': 'f'
     }

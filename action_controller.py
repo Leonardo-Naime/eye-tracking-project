@@ -12,7 +12,7 @@ class ActionController:
         self.last_action_time = 0
         self.last_fullscreen_time = 0  # Cooldown específico para fullscreen
         self.min_action_interval = 0.5  # Segundos entre ações para evitar spam
-        self.fullscreen_cooldown = 3.0  # Cooldown maior para fullscreen (3 segundos)
+        self.fullscreen_cooldown = 1.0  # Cooldown maior para fullscreen (3 segundos)
         
         # Configurações do pyautogui
         pyautogui.PAUSE = 0.1
@@ -20,12 +20,9 @@ class ActionController:
     
     def can_execute_action(self, action_name: str = None) -> bool:
         # Verifica se pode executar uma ação (evita spam)
-        # Args:
-        #     action_name: Nome da ação para verificar cooldown específico
         
         current_time = time.time()
         
-        # Se for ação de fullscreen, verifica cooldown específico
         if action_name == 'fullscreen':
             if current_time - self.last_fullscreen_time >= self.fullscreen_cooldown:
                 self.last_fullscreen_time = current_time
@@ -40,7 +37,6 @@ class ActionController:
     
     def execute_youtube_action(self, action_name: str) -> bool:
         # Executa uma ação específica do YouTube
-        
         if not self.can_execute_action(action_name):
             return False
             
@@ -50,7 +46,6 @@ class ActionController:
         
         try:
             key_combination = self.config.YOUTUBE_ACTIONS[action_name]
-            
             # Suporte para combinações de teclas (ex: shift+n)
             if '+' in key_combination:
                 keys = key_combination.split('+')
@@ -84,7 +79,6 @@ class ActionController:
     
     def handle_absence_action(self, action_name: str) -> None:
         # Ação executada quando há ausência prolongada de rosto
-        
         self.execute_youtube_action('play_pause')
         if(action_name == 'play'):
             print("Rosto detectado - Retomando vídeo")
@@ -92,17 +86,7 @@ class ActionController:
             print("Ausência detectada - Pausando vídeo")
     
     def handle_custom_gesture(self, gesture_type: str, **kwargs) -> None:
-        # Manipula gestos customizados futuros
-        # Args:
-        #     gesture_type: Tipo do gesto
-        #     **kwargs: Parâmetros adicionais do gesto
-            
-        # Placeholder para gestos futuros como:
-        # - Piscar olho direito vs esquerdo
-        # - Manter olhos fechados por tempo prolongado
-        # - Movimentos de cabeça
-        # - etc.
-        
+        # Manipula gestos customizados 
         gesture_actions = {
             'long_blink': lambda: self.execute_youtube_action('play_pause'),
             'double_blink': lambda: self.execute_youtube_action('fullscreen'),
@@ -117,12 +101,10 @@ class ActionController:
     
     def get_available_actions(self) -> Dict[str, str]:
         # Retorna lista de ações disponíveis
-        
         return self.config.YOUTUBE_ACTIONS.copy()
     
     def set_action_interval(self, interval: float) -> None:
         # Define o intervalo mínimo entre ações
-        
         self.min_action_interval = max(0.1, interval)  # Mínimo de 0.1s
     
     def handle_volume_action(self, direction: str) -> None:
@@ -138,16 +120,10 @@ class ActionController:
     
     def set_fullscreen_cooldown(self, cooldown: float) -> None:
         # Define o cooldown específico para fullscreen
-        # Args:
-        #     cooldown: Tempo em segundos (mínimo 1.0s)
-        
         self.fullscreen_cooldown = max(1.0, cooldown)
     
     def get_cooldown_status(self) -> Dict[str, float]:
         # Retorna o status dos cooldowns
-        # Returns:
-        #     Dict com tempo restante para cada tipo de ação
-        
         current_time = time.time()
         return {
             'regular_actions': max(0, self.min_action_interval - (current_time - self.last_action_time)),
